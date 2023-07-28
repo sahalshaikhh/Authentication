@@ -1,10 +1,11 @@
 //jshint esversion:6
-require('dotenv').config()
+// require('dotenv').config()
 const express = require('express');
 const bodyParser = require('body-parser');
 const ejs = require("ejs");
 const mongoose = require("mongoose");
 const Encryption = require("mongoose-field-encryption").fieldEncryption;
+const md5 = require('md5');
 
 const app = express();
 
@@ -24,7 +25,12 @@ const NewUserSchema = new mongoose.Schema({
     password: String
 });
 
-NewUserSchema.plugin(Encryption, { fields: ["password"], secret: process.env.SECRET });
+
+// NewUserSchema.plugin(Encryption, { fields: ["password"], secret: process.env.SECRET });(LEVEL:2 Security)
+
+// level THREE security
+// console.log(md5('sahal'));
+
 
 // Making model
 
@@ -44,7 +50,7 @@ app.get("/login", (req, res) => {
 
 app.post("/register", (req, res) => {
     const user = req.body.username;
-    const Password = req.body.password;
+    const Password = md5(req.body.password);
     const newUser = new NewUser({
         "userName": user,
         "password": Password
@@ -64,7 +70,7 @@ app.post("/login", (req, res) => {
 
         .then((foundData) => {
             if (foundData) {
-                if (foundData.password === req.body.password) {
+                if (foundData.password === md5(req.body.password)) {
                     res.render('secrets')
                 } else {
                     res.send("Password Incorrect")
