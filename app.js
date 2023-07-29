@@ -4,8 +4,9 @@ const express = require('express');
 const bodyParser = require('body-parser');
 const ejs = require("ejs");
 const mongoose = require("mongoose");
-const Encryption = require("mongoose-field-encryption").fieldEncryption;
-const md5 = require('md5');
+// const Encryption = require("mongoose-field-encryption").fieldEncryption;
+const bcrypt = require("bcrypt");
+const saltRounds = 10;
 
 const app = express();
 
@@ -49,32 +50,42 @@ app.get("/login", (req, res) => {
 });
 
 app.post("/register", (req, res) => {
-    const user = req.body.username;
-    const Password = md5(req.body.password);
-    const newUser = new NewUser({
-        "userName": user,
-        "password": Password
-    })
-    newUser.save()
-        .then(() => {
-            res.render("secrets")
+
+    bcrypt.hash(req.body.password, saltRounds, function (err, hash) {
+        // Store hash in your password DB.
+        const user = req.body.username;
+        const Password = hash;
+        const newUser = new NewUser({
+            "userName": user,
+            "password": Password
         })
+        newUser.save()
+            .then(() => {
+                res.render("secrets")
+            })
+    });
+
+
+
 });
 
 app.post("/login", (req, res) => {
     const user = req.body.username;
+    const password = req.body.password;
 
     NewUser.findOne({
         userName: user,
     })
-
         .then((foundData) => {
             if (foundData) {
-                if (foundData.password === md5(req.body.password)) {
-                    res.render('secrets')
-                } else {
-                    res.send("Password Incorrect")
-                }
+                bcrypt.compare(password, foundData.password, function (err, result) {
+                    // result == true
+                    if (result === true) {
+                        res.render("secrets")
+                    } else {
+                        res.send("Password incorret")
+                    }
+                });
             } else {
                 res.send("Please Register first")
             }
